@@ -1,4 +1,4 @@
-]
+
         // Estado Global da Aplicação
         const app = {
             screens: [],
