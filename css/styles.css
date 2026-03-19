@@ -1013,3 +1013,34 @@
         /* ─── VALIDATION PANEL COMPAT ─── */
         .validation-global-config { padding:0; }
         .validation-content       { display:block!important; }
+
+        /* ─── FOOTER ─── */
+        .ide-footer {
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            height: 26px;
+            background: var(--ide-titlebar);
+            border-top: 1px solid var(--ide-border);
+            font-size: 11px;
+            color: var(--ide-text-dim);
+            user-select: none;
+        }
+        .ide-footer-by strong { color: var(--ide-text); font-weight: 600; }
+        .ide-footer-linkedin {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            color: #0a66c2;
+            text-decoration: none;
+            font-weight: 700;
+            font-size: 11px;
+            padding: 2px 8px;
+            border: 1px solid rgba(10,102,194,.35);
+            border-radius: 4px;
+            transition: all .15s;
+        }
+        .ide-footer-linkedin:hover { background:rgba(10,102,194,.12); border-color:#0a66c2; color:#1a8fff; }
+        .linkedin-icon { width:13px; height:13px; flex-shrink:0; }
