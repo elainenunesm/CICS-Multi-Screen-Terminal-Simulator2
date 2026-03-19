@@ -82,7 +82,7 @@
 
             <!-- Tab: Nav. -->
             <div id="tab-nav" class="sidebar-tab-panel">
-                <div class="sidebar-section-label" style="display:flex;justify-content:space-between;align-items:center;">
+                <div class="sidebar-section-label">
                     <span>NAVEGAÇÃO</span>
                     <div style="display:flex;gap:3px;">
                         <button class="sidebar-mini-btn" onclick="openImportModal()" title="Importar">📥</button>
@@ -145,11 +145,29 @@
             <!-- Tab: Config -->
             <div id="tab-config" class="sidebar-tab-panel">
                 <div class="sidebar-section-label">TEMA</div>
-                <button class="sidebar-action-btn" onclick="toggleTheme()" style="margin-bottom:6px;">🌓 Alternar Tema</button>
+                <button class="config-card-btn" onclick="toggleTheme()">
+                    <span class="config-card-icon">🌓</span>
+                    <span class="config-card-text">
+                        <span class="config-card-title">Alternar Tema</span>
+                        <span class="config-card-desc">Claro / Escuro</span>
+                    </span>
+                </button>
 
                 <div class="sidebar-section-label">EXPORTAR</div>
-                <button class="sidebar-action-btn" style="margin-bottom:6px;" onclick="openValidationExportModal()">📤 BMS / COBOL / Copybook</button>
-                <button class="sidebar-action-btn" onclick="openExportModal()">📤 Regras de Navegação</button>
+                <button class="config-card-btn" onclick="openValidationExportModal()">
+                    <span class="config-card-icon">📦</span>
+                    <span class="config-card-text">
+                        <span class="config-card-title">BMS / COBOL / Copybook</span>
+                        <span class="config-card-desc">Exportar código e definições</span>
+                    </span>
+                </button>
+                <button class="config-card-btn" onclick="openExportModal()">
+                    <span class="config-card-icon">🗺</span>
+                    <span class="config-card-text">
+                        <span class="config-card-title">Regras de Navegação</span>
+                        <span class="config-card-desc">Exportar configuração JSON</span>
+                    </span>
+                </button>
             </div>
         </div>
 
