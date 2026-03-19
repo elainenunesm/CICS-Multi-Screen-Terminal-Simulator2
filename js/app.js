@@ -952,7 +952,7 @@
             app.navigationRules.push(rule);
             renderNavigationRules();
             updatePFKeysLabels();
-            updateCodePanel(true);
+            if ((app.activeCodeTab || 'cics') === 'cics') updateCodePanel(true);
         }
 
         function renderNavigationRules() {
@@ -977,93 +977,56 @@
                 const toScreen = app.screens.find(s => s.id === rule.toScreen);
                 const action = rule.action || 'navigate';
                 const needsMapping = rule.needsMapping;
-                const borderColor = needsMapping ? '#ff9800' : '#003300';
-                
+
                 return `
-                    <div class="nav-rule" style="display: flex; align-items: center; gap: 5px; padding: 8px; border-left: 3px solid ${borderColor};">
-                        ${needsMapping ? '<span style="color: #ff9800; margin-right: 5px;" title="Precisa de associação manual">⚠️</span>' : ''}
-                        <span style="font-size: 11px; white-space: nowrap;">De:</span>
-                        <select onchange="updateNavigationRule(${rule.id}, 'fromScreen', this.value)" style="max-width: 150px;" ${!fromScreen ? 'style="border: 2px solid #ff9800;"' : ''}>
-                            ${!fromScreen ? `<option value="">⚠️ ${rule.originalFromScreenName || 'Selecione...'}</option>` : ''}
-                            ${app.screens.map(s => `
-                                <option value="${s.id}" ${s.id === rule.fromScreen ? 'selected' : ''}>
-                                    ${s.name}
-                                </option>
-                            `).join('')}
-                        </select>
-                        <span style="font-size: 11px; white-space: nowrap;">Tecla:</span>
-                        <select onchange="updateNavigationRule(${rule.id}, 'key', this.value)" style="width: 110px;">
-                            <option value="ONLOAD" ${rule.key === 'ONLOAD' ? 'selected' : ''}>🔄 Carregar Tela</option>
-                            <option value="ENTER" ${rule.key === 'ENTER' ? 'selected' : ''}>ENTER</option>
-                            <option value="PF1" ${rule.key === 'PF1' ? 'selected' : ''}>PF1</option>
-                            <option value="PF2" ${rule.key === 'PF2' ? 'selected' : ''}>PF2</option>
-                            <option value="PF3" ${rule.key === 'PF3' ? 'selected' : ''}>PF3</option>
-                            <option value="PF4" ${rule.key === 'PF4' ? 'selected' : ''}>PF4</option>
-                            <option value="PF5" ${rule.key === 'PF5' ? 'selected' : ''}>PF5</option>
-                            <option value="PF6" ${rule.key === 'PF6' ? 'selected' : ''}>PF6</option>
-                            <option value="PF7" ${rule.key === 'PF7' ? 'selected' : ''}>PF7</option>
-                            <option value="PF8" ${rule.key === 'PF8' ? 'selected' : ''}>PF8</option>
-                            <option value="PF9" ${rule.key === 'PF9' ? 'selected' : ''}>PF9</option>
-                            <option value="PF10" ${rule.key === 'PF10' ? 'selected' : ''}>PF10</option>
-                            <option value="PF11" ${rule.key === 'PF11' ? 'selected' : ''}>PF11</option>
-                            <option value="PF12" ${rule.key === 'PF12' ? 'selected' : ''}>PF12</option>
-                        </select>
-                        <span style="font-size: 11px; white-space: nowrap;">Ação:</span>
-                        <select onchange="updateNavigationRule(${rule.id}, 'action', this.value)" style="width: 165px;">
-                            <option value="navigate" ${action === 'navigate' ? 'selected' : ''}>Navegar para</option>
-                            <option value="navigate_msg" ${action === 'navigate_msg' ? 'selected' : ''}>Navegar + Mensagem</option>
-                            <option value="message" ${action === 'message' ? 'selected' : ''}>Mostrar mensagem</option>
-                            <option value="clear" ${action === 'clear' ? 'selected' : ''}>Limpar campos</option>
-                            <option value="clear_msg" ${action === 'clear_msg' ? 'selected' : ''}>Limpar + Mensagem</option>
-                        </select>
-                        ${action === 'navigate' ? `
-                            <select onchange="updateNavigationRule(${rule.id}, 'toScreen', this.value)" style="flex: 1;" ${!toScreen ? 'style="border: 2px solid #ff9800;"' : ''}>
-                                ${!toScreen ? `<option value="">⚠️ ${rule.originalToScreenName || 'Selecione...'}</option>` : ''}
-                                ${app.screens.map(s => `
-                                    <option value="${s.id}" ${s.id === rule.toScreen ? 'selected' : ''}>
-                                        ${s.name}
-                                    </option>
-                                `).join('')}
+                    <div class="nav-rule${needsMapping ? ' nav-rule-warn' : ''}">
+                        <div class="nav-row1">
+                            ${needsMapping ? '<span class="nav-warn-icon" title="Precisa de associação">⚠️</span>' : ''}
+                            <span class="nav-lbl">De:</span>
+                            <select class="nav-sel" onchange="updateNavigationRule(${rule.id}, 'fromScreen', this.value)">
+                                ${!fromScreen ? `<option value="">⚠️ ${rule.originalFromScreenName || 'Selecione'}</option>` : ''}
+                                ${app.screens.map(s => `<option value="${s.id}" ${s.id === rule.fromScreen ? 'selected' : ''}>${s.name}</option>`).join('')}
                             </select>
-                        ` : action === 'navigate_msg' ? `
-                            <select onchange="updateNavigationRule(${rule.id}, 'toScreen', this.value)" style="max-width: 150px;" ${!toScreen ? 'style="border: 2px solid #ff9800;"' : ''}>
-                                ${!toScreen ? `<option value="">⚠️ ${rule.originalToScreenName || 'Selecione...'}</option>` : ''}
-                                ${app.screens.map(s => `
-                                    <option value="${s.id}" ${s.id === rule.toScreen ? 'selected' : ''}>
-                                        ${s.name}
-                                    </option>
-                                `).join('')}
+                            <select class="nav-sel nav-sel-key" onchange="updateNavigationRule(${rule.id}, 'key', this.value)">
+                                <option value="ONLOAD" ${rule.key === 'ONLOAD' ? 'selected' : ''}>🔄 Load</option>
+                                <option value="ENTER"  ${rule.key === 'ENTER'  ? 'selected' : ''}>ENTER</option>
+                                ${[1,2,3,4,5,6,7,8,9,10,11,12].map(n => `<option value="PF${n}" ${rule.key === 'PF'+n ? 'selected' : ''}>PF${n}</option>`).join('')}
                             </select>
-                            <input type="text" 
-                                   id="msg_${rule.id}"
-                                   value="${(rule.message || '').replace(/"/g, '&quot;')}" 
-                                   placeholder="Mensagem inicial (máx. 80 caracteres)..."
-                                   maxlength="80"
-                                   oninput="updateNavigationRule(${rule.id}, 'message', this.value)"
-                                   onkeydown="event.stopPropagation()"
-                                   style="flex: 1; padding: 5px; background: #0a0a0a; color: #00ff00; border: 1px solid #00ff00; font-size: 11px;" />
-                        ` : action === 'clear' ? `
-                            <span style="flex: 1; padding: 5px; color: #00ff00; font-size: 11px; font-style: italic;">Limpa todos os campos editáveis</span>
-                        ` : action === 'clear_msg' ? `
-                            <input type="text" 
-                                   id="msg_${rule.id}"
-                                   value="${(rule.message || '').replace(/"/g, '&quot;')}" 
-                                   placeholder="Mensagem após limpar (máx. 80 caracteres)..."
-                                   maxlength="80"
-                                   oninput="updateNavigationRule(${rule.id}, 'message', this.value)"
-                                   onkeydown="event.stopPropagation()"
-                                   style="flex: 1; padding: 5px; background: #0a0a0a; color: #00ff00; border: 1px solid #00ff00; font-size: 11px;" />
-                        ` : `
-                            <input type="text" 
-                                   id="msg_${rule.id}"
-                                   value="${(rule.message || '').replace(/"/g, '&quot;')}" 
-                                   placeholder="Digite a mensagem (máx. 80 caracteres)..."
-                                   maxlength="80"
-                                   oninput="updateNavigationRule(${rule.id}, 'message', this.value)"
-                                   onkeydown="event.stopPropagation()"
-                                   style="flex: 1; padding: 5px; background: #0a0a0a; color: #00ff00; border: 1px solid #00ff00; font-size: 11px;" />
-                        `}
-                        <button onclick="deleteNavigationRule(${rule.id})" style="padding: 3px 8px; background: #660000; color: #ff6666; border: 1px solid #ff3333; cursor: pointer; font-size: 11px; border-radius: 2px;">🗑️</button>
+                        </div>
+                        <div class="nav-row2">
+                            <select class="nav-sel nav-sel-action" onchange="updateNavigationRule(${rule.id}, 'action', this.value)">
+                                <option value="navigate"     ${action === 'navigate'     ? 'selected' : ''}>→ Navegar</option>
+                                <option value="navigate_msg" ${action === 'navigate_msg' ? 'selected' : ''}>→ Nav+Msg</option>
+                                <option value="message"      ${action === 'message'      ? 'selected' : ''}>💬 Mensagem</option>
+                                <option value="clear"        ${action === 'clear'        ? 'selected' : ''}>🗑 Limpar</option>
+                                <option value="clear_msg"    ${action === 'clear_msg'    ? 'selected' : ''}>🗑 Limp+Msg</option>
+                            </select>
+                            ${action === 'navigate' ? `
+                                <select class="nav-sel" onchange="updateNavigationRule(${rule.id}, 'toScreen', this.value)">
+                                    ${!toScreen ? `<option value="">⚠️ ${rule.originalToScreenName || 'Tela'}</option>` : ''}
+                                    ${app.screens.map(s => `<option value="${s.id}" ${s.id === rule.toScreen ? 'selected' : ''}>${s.name}</option>`).join('')}
+                                </select>
+                            ` : action === 'navigate_msg' ? `
+                                <select class="nav-sel" style="max-width:80px" onchange="updateNavigationRule(${rule.id}, 'toScreen', this.value)">
+                                    ${!toScreen ? `<option value="">⚠️ ${rule.originalToScreenName || 'Tela'}</option>` : ''}
+                                    ${app.screens.map(s => `<option value="${s.id}" ${s.id === rule.toScreen ? 'selected' : ''}>${s.name}</option>`).join('')}
+                                </select>
+                                <input type="text" class="nav-msg-input" id="msg_${rule.id}"
+                                    value="${(rule.message || '').replace(/"/g, '&quot;')}"
+                                    placeholder="Mensagem…" maxlength="80"
+                                    oninput="updateNavigationRule(${rule.id}, 'message', this.value)"
+                                    onkeydown="event.stopPropagation()">
+                            ` : action === 'clear' ? `
+                                <span class="nav-clear-info">Limpa todos os campos</span>
+                            ` : `
+                                <input type="text" class="nav-msg-input" id="msg_${rule.id}"
+                                    value="${(rule.message || '').replace(/"/g, '&quot;')}"
+                                    placeholder="${action === 'clear_msg' ? 'Msg após limpar…' : 'Mensagem…'}" maxlength="80"
+                                    oninput="updateNavigationRule(${rule.id}, 'message', this.value)"
+                                    onkeydown="event.stopPropagation()">
+                            `}
+                            <button class="nav-del-btn" onclick="deleteNavigationRule(${rule.id})" title="Remover regra">🗑</button>
+                        </div>
                     </div>
                 `;
             }).join('');
@@ -1120,7 +1083,7 @@
                 renderNavigationRules();
             }
             updatePFKeysLabels();
-            updateCodePanel(true);
+            if ((app.activeCodeTab || 'cics') === 'cics') updateCodePanel(true);
         }
 
         function deleteNavigationRule(ruleId) {
@@ -1129,7 +1092,7 @@
                 app.navigationRules.splice(index, 1);
                 renderNavigationRules();
                 updatePFKeysLabels();
-                updateCodePanel(true);
+                if ((app.activeCodeTab || 'cics') === 'cics') updateCodePanel(true);
             }
         }
 
@@ -2003,89 +1966,91 @@
                     </label>
                 </div>
 
-                <div class="bms-attributes-section" style="margin: 20px 0; padding: 15px; border: 1px solid #10b981; border-radius: 8px;">
-                    <h4 style="margin: 0 0 15px 0; color: #10b981;">🎨 Atributos BMS</h4>
-                    
-                    <div style="margin-bottom: 15px;">
-                        <div style="font-weight: 600; margin-bottom: 8px; color: #1f2937;">Proteção (escolha 1)</div>
-                        <div>
-                            <div style="margin-bottom: 5px; clear: both;">
-                                <input type="checkbox" class="bmsProtection" value="UNPROT" 
-                                       ${field.bmsAttributes.protection === 'UNPROT' ? 'checked' : ''}
-                                       onchange="updateBMSAttributes(this)" style="float: left; margin-right: 8px;">
-                                <span style="color: #374151;">UNPROT - Campo editável</span>
-                            </div>
-                            <div style="margin-bottom: 5px; clear: both;">
-                                <input type="checkbox" class="bmsProtection" value="PROT" 
-                                       ${field.bmsAttributes.protection === 'PROT' ? 'checked' : ''}
-                                       onchange="updateBMSAttributes(this)" style="float: left; margin-right: 8px;">
-                                <span style="color: #374151;">PROT - Campo protegido (pode receber foco)</span>
-                            </div>
-                        </div>
+                <div class="bms-attributes-section">
+                    <div class="bms-attr-header">🎨 Atributos BMS</div>
+
+                    <div class="bms-attr-group">
+                        <div class="bms-attr-title">Proteção (escolha 1)</div>
+                        <label class="bms-attr-opt">
+                            <input type="checkbox" class="bmsProtection" value="UNPROT"
+                                   ${field.bmsAttributes.protection === 'UNPROT' ? 'checked' : ''}
+                                   onchange="updateBMSAttributes(this)">
+                            <span class="bms-attr-key">UNPROT</span>
+                            <span class="bms-attr-desc">Campo editável</span>
+                        </label>
+                        <label class="bms-attr-opt">
+                            <input type="checkbox" class="bmsProtection" value="PROT"
+                                   ${field.bmsAttributes.protection === 'PROT' ? 'checked' : ''}
+                                   onchange="updateBMSAttributes(this)">
+                            <span class="bms-attr-key">PROT</span>
+                            <span class="bms-attr-desc">Protegido (c/ foco)</span>
+                        </label>
+                        <label class="bms-attr-opt">
+                            <input type="checkbox" class="bmsOther" value="ASKIP"
+                                   ${field.bmsAttributes.protection === 'ASKIP' ? 'checked' : ''}
+                                   onchange="updateBMSAttributes(this)">
+                            <span class="bms-attr-key">ASKIP</span>
+                            <span class="bms-attr-desc">Auto-skip (label)</span>
+                        </label>
                     </div>
 
-                    <div style="margin-bottom: 15px;">
-                        <div style="font-weight: 600; margin-bottom: 8px; color: #1f2937;">Tipo de variável (escolha 1)</div>
-                        <div>
-                            <div style="margin-bottom: 5px; clear: both;">
-                                <input type="checkbox" class="bmsType" value="NUM" 
-                                       ${field.bmsAttributes.protection === 'NUM' ? 'checked' : ''}
-                                       onchange="updateBMSAttributes(this)" style="float: left; margin-right: 8px;">
-                                <span style="color: #374151;">NUM - Campo numérico editável</span>
-                            </div>
-                            <div style="margin-bottom: 5px; clear: both;">
-                                <input type="checkbox" class="bmsType" value="NORM" 
-                                       ${field.bmsAttributes.intensity === 'NORM' ? 'checked' : ''}
-                                       onchange="updateBMSAttributes(this)" style="float: left; margin-right: 8px;">
-                                <span style="color: #374151;">NORM - Intensidade normal</span>
-                            </div>
-                        </div>
+                    <div class="bms-attr-group">
+                        <div class="bms-attr-title">Tipo de variável (escolha 1)</div>
+                        <label class="bms-attr-opt">
+                            <input type="checkbox" class="bmsType" value="NUM"
+                                   ${field.bmsAttributes.type === 'NUM' ? 'checked' : ''}
+                                   onchange="updateBMSAttributes(this)">
+                            <span class="bms-attr-key">NUM</span>
+                            <span class="bms-attr-desc">Numérico editável</span>
+                        </label>
+                        <label class="bms-attr-opt">
+                            <input type="checkbox" class="bmsType" value="NORM"
+                                   ${field.bmsAttributes.type === 'NORM' ? 'checked' : ''}
+                                   onchange="updateBMSAttributes(this)">
+                            <span class="bms-attr-key">NORM</span>
+                            <span class="bms-attr-desc">Alfanumérico normal</span>
+                        </label>
                     </div>
 
-                    <div style="margin-bottom: 15px;">
-                        <div style="font-weight: 600; margin-bottom: 8px; color: #1f2937;">Intensidade (escolha 1)</div>
-                        <div>
-                            <div style="margin-bottom: 5px; clear: both;">
-                                <input type="checkbox" class="bmsIntensity" value="BRT" 
-                                       ${field.bmsAttributes.intensity === 'BRT' ? 'checked' : ''}
-                                       onchange="updateBMSAttributes(this)" style="float: left; margin-right: 8px;">
-                                <span style="color: #374151;">BRT - Intensidade brilhante</span>
-                            </div>
-                            <div style="margin-bottom: 5px; clear: both;">
-                                <input type="checkbox" class="bmsIntensity" value="DRK" 
-                                       ${field.bmsAttributes.intensity === 'DRK' ? 'checked' : ''}
-                                       onchange="updateBMSAttributes(this)" style="float: left; margin-right: 8px;">
-                                <span style="color: #374151;">DRK - Invisível/oculto (para senhas)</span>
-                            </div>
-                        </div>
+                    <div class="bms-attr-group">
+                        <div class="bms-attr-title">Intensidade (escolha 1)</div>
+                        <label class="bms-attr-opt">
+                            <input type="checkbox" class="bmsIntensity" value="BRT"
+                                   ${field.bmsAttributes.intensity === 'BRT' ? 'checked' : ''}
+                                   onchange="updateBMSAttributes(this)">
+                            <span class="bms-attr-key">BRT</span>
+                            <span class="bms-attr-desc">Brilhante</span>
+                        </label>
+                        <label class="bms-attr-opt">
+                            <input type="checkbox" class="bmsIntensity" value="DRK"
+                                   ${field.bmsAttributes.intensity === 'DRK' ? 'checked' : ''}
+                                   onchange="updateBMSAttributes(this)">
+                            <span class="bms-attr-key">DRK</span>
+                            <span class="bms-attr-desc">Oculto (senha)</span>
+                        </label>
                     </div>
 
-                    <div style="margin-bottom: 15px;">
-                        <div style="font-weight: 600; margin-bottom: 8px; color: #1f2937;">Outros atributos (múltipla escolha)</div>
-                        <div>
-                            <div style="margin-bottom: 5px; clear: both;">
-                                <input type="checkbox" id="bmsIC" 
-                                       ${field.bmsAttributes.ic ? 'checked' : ''}
-                                       onchange="updateBMSAttributes()" style="float: left; margin-right: 8px;">
-                                <span style="color: #374151;">IC - Insert Cursor (cursor inicia neste campo)</span>
-                            </div>
-                            <div style="margin-bottom: 5px; clear: both;">
-                                <input type="checkbox" id="bmsFSET" 
-                                       ${field.bmsAttributes.fset ? 'checked' : ''}
-                                       onchange="updateBMSAttributes()" style="float: left; margin-right: 8px;">
-                                <span style="color: #374151;">FSET - Field Set (campo foi modificado)</span>
-                            </div>
-                            <div style="margin-bottom: 5px; clear: both;">
-                                <input type="checkbox" class="bmsOther" value="ASKIP" 
-                                       ${field.bmsAttributes.protection === 'ASKIP' ? 'checked' : ''}
-                                       onchange="updateBMSAttributes(this)" style="float: left; margin-right: 8px;">
-                                <span style="color: #374151;">ASKIP - Auto-skip (label/protegido)</span>
-                            </div>
-                        </div>
+                    <div class="bms-attr-group">
+                        <div class="bms-attr-title">Extras (múltipla escolha)</div>
+                        <label class="bms-attr-opt">
+                            <input type="checkbox" id="bmsIC"
+                                   ${field.bmsAttributes.ic ? 'checked' : ''}
+                                   onchange="updateBMSAttributes()">
+                            <span class="bms-attr-key">IC</span>
+                            <span class="bms-attr-desc">Insert Cursor</span>
+                        </label>
+                        <label class="bms-attr-opt">
+                            <input type="checkbox" id="bmsFSET"
+                                   ${field.bmsAttributes.fset ? 'checked' : ''}
+                                   onchange="updateBMSAttributes()">
+                            <span class="bms-attr-key">FSET</span>
+                            <span class="bms-attr-desc">Field Set</span>
+                        </label>
                     </div>
 
-                    <div style="margin-top: 10px; padding: 10px; background: #f0fdf4; border-radius: 4px; font-size: 12px;">
-                        <strong>Preview ATTRB:</strong> <code id="bmsAttrPreview">${getBMSAttrString(field)}</code>
+                    <div class="bms-attr-preview">
+                        <div class="bms-attr-preview-lbl">Preview ATTRB</div>
+                        <code id="bmsAttrPreview">${getBMSAttrString(field)}</code>
                     </div>
                 </div>
 
@@ -5169,21 +5134,6 @@
             bms += '\n';
             bms += formatBMSLine('       DFHMSD TYPE=FINAL');
             bms += formatBMSLine('       END');
-
-            // Regras de navegação como comentários
-            var navRules = app.navigationRules.filter(function(r) { return r.fromScreen === screen.id; });
-            if (navRules.length > 0) {
-                bms += '\n* ----------------------------------------\n';
-                bms += '* NAVEGAÇÃO / AÇÕES CONFIGURADAS\n';
-                bms += '* ----------------------------------------\n';
-                navRules.forEach(function(r) {
-                    bms += '* [' + r.key + '] -> ' + r.action +
-                           (r.toScreen ? ' -> ' + r.toScreen : '') +
-                           (r.message  ? ' MSG: ' + r.message  : '') + '\n';
-                });
-            }
-
-            bms += '\n* Teclas de validação: ' + (app.validationKeys || []).join(', ') + '\n';
             return bms;
         }
 
