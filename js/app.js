@@ -2504,6 +2504,193 @@
         }
 
         // Alternar Tema (Light/Dark)
+        /* ════════════════════════════════════
+           MOBILE DRAWERS
+           ════════════════════════════════════ */
+        function toggleMobileSidebar() {
+            var sidebar  = document.querySelector('.ide-sidebar');
+            var code     = document.querySelector('.ide-code-panel');
+            var overlay  = document.getElementById('mobileOverlay');
+            var isOpen   = sidebar.classList.toggle('mobile-open');
+            if (isOpen) { code.classList.remove('mobile-open'); }
+            overlay.classList.toggle('show', isOpen);
+        }
+        function toggleMobileCode() {
+            var sidebar = document.querySelector('.ide-sidebar');
+            var code    = document.querySelector('.ide-code-panel');
+            var overlay = document.getElementById('mobileOverlay');
+            var isOpen  = code.classList.toggle('mobile-open');
+            if (isOpen) { sidebar.classList.remove('mobile-open'); }
+            overlay.classList.toggle('show', isOpen);
+        }
+        function closeMobileDrawers() {
+            document.querySelector('.ide-sidebar').classList.remove('mobile-open');
+            document.querySelector('.ide-code-panel').classList.remove('mobile-open');
+            document.getElementById('mobileOverlay').classList.remove('show');
+        }
+
+        function copyExampleTxt(btn) {
+            const pre = document.getElementById('exampleTxtContent');
+            if (!pre) return;
+            navigator.clipboard.writeText(pre.textContent).then(function() {
+                const original = btn.textContent;
+                btn.textContent = '✅ Copiado!';
+                btn.style.color = '#4ec9b0';
+                btn.style.borderColor = '#4ec9b0';
+                setTimeout(function() {
+                    btn.textContent = original;
+                    btn.style.color = '';
+                    btn.style.borderColor = '';
+                }, 2000);
+            }).catch(function() {
+                showMessage('Erro ao copiar. Selecione e copie manualmente.', 'error');
+            });
+        }
+
+        // ════════════════════════════════════════════
+        //  GUIDED TOUR
+        // ════════════════════════════════════════════
+        var _tourSpot = null, _tourTip = null, _tourIdx = 0;
+
+        var _tourSteps = [
+            {
+                sel: '.ide-titlebar-actions',
+                pos: 'bottom',
+                title: '🛠 Barra de Ferramentas',
+                text: 'Aqui ficam os botões principais: <b>Carregar</b> importa telas TXT/BMS; <b>Exportar</b> gera COBOL, BMS, Copybook ou JSON; <b>Tour</b> reinicia este guia; <b>Ajuda</b> abre o manual completo.'
+            },
+            {
+                sel: '.sidebar-tabs',
+                pos: 'right',
+                title: '🗂 Abas do Painel Lateral',
+                text: 'Quatro abas organizam o simulador: <b>🖥 Telas</b> (gerenciar telas carregadas), <b>🔀 Nav.</b> (regras de navegação por PF key), <b>🔤 Campos</b> (atributos BMS e validações) e <b>⚙ Config</b> (tema e exportações rápidas).'
+            },
+            {
+                sel: '.sidebar-file-row',
+                pos: 'right',
+                title: '📂 Carregar Telas',
+                text: 'Clique em <b>Carregar</b> para importar arquivos <b>.txt</b> (layout 3270 com <code>x</code> para numérico e <code>z</code> para alfanumérico) ou <b>.bms</b>. Você pode carregar várias telas de uma vez.'
+            },
+            {
+                sel: '.screens-container',
+                pos: 'right',
+                title: '📋 Lista de Telas',
+                text: 'Cada tela carregada aparece aqui. Clique para visualizar, use os botões para renomear (✏) ou excluir (🗑). A tela ativa fica destacada em azul.'
+            },
+            {
+                sel: '.terminal-screen',
+                pos: 'top',
+                title: '🖥 Terminal IBM 3270',
+                text: 'Emulação exata do terminal 3270 — <b>24 linhas × 80 colunas</b>. Campos editáveis aparecem em <b>verde claro</b>. Clique num campo para selecioná-lo e configurar seus atributos na aba Campos.'
+            },
+            {
+                sel: '.function-keys',
+                pos: 'top',
+                title: '⌨️ Teclas de Função',
+                text: 'As teclas PF são detectadas automaticamente do arquivo TXT. Teclas com <b>borda verde</b> têm regras de navegação configuradas. Clique em qualquer tecla para simulá-la.'
+            },
+            {
+                sel: '#navMapping',
+                fallback: '[data-tab="nav"]',
+                pos: 'right',
+                title: '🔀 Regras de Navegação',
+                text: 'Define <b>o que acontece</b> ao pressionar cada PF key: navegar para outra tela, exibir mensagem, limpar campos, etc. Clique em <b>+ Adicionar Regra</b> para criar. O código COBOL é gerado automaticamente a partir dessas regras.'
+            },
+            {
+                sel: '#validationConfig',
+                fallback: '[data-tab="campos"]',
+                pos: 'right',
+                title: '🔤 Atributos BMS e Validações',
+                text: 'Com um campo selecionado: configure o <b>nome BMS</b> (ex: NOMEI), a <b>proteção</b> (UNPROT/PROT/ASKIP), a <b>intensidade</b> (BRT/DRK) e regras de validação como tamanho mínimo, CPF, data, etc.'
+            },
+            {
+                sel: '#tabCics',
+                pos: 'left',
+                title: '📑 Abas de Código',
+                text: 'Alterne entre <b>CICS/COBOL</b> (código completo do programa com navegação e validações) e <b>BMS MAP</b> (definição do layout da tela com DFHMSD/DFHMDI/DFHMDF). Ambos são gerados em tempo real.'
+            },
+            {
+                sel: '.ide-code-panel',
+                pos: 'left',
+                title: '📄 Painel de Código Gerado',
+                text: 'Exibe o código gerado automaticamente. Você pode <b>redimensionar</b> este painel arrastando a borda esquerda. Use o botão <b>▶ PROC</b> para pular direto para a PROCEDURE DIVISION.'
+            }
+        ];
+
+        function startTour() {
+            if (!_tourSpot) {
+                _tourSpot = document.createElement('div');
+                _tourSpot.className = 'tour-spotlight';
+                document.body.appendChild(_tourSpot);
+            }
+            if (!_tourTip) {
+                _tourTip = document.createElement('div');
+                _tourTip.className = 'tour-tooltip';
+                document.body.appendChild(_tourTip);
+            }
+            _tourSpot.style.display = 'block';
+            _tourTip.style.display  = 'block';
+            _tourIdx = 0;
+            _tourShow(0);
+        }
+
+        function _tourGetEl(step) {
+            var el = document.querySelector(step.sel);
+            if (!el && step.fallback) el = document.querySelector(step.fallback);
+            return el;
+        }
+
+        function _tourShow(idx) {
+            var step = _tourSteps[idx];
+            var el   = _tourGetEl(step);
+            if (!el) {
+                if (idx < _tourSteps.length - 1) { _tourShow(idx + 1); return; }
+                else { endTour(); return; }
+            }
+            var pad  = 7;
+            var r    = el.getBoundingClientRect();
+            _tourSpot.style.top    = (r.top    - pad) + 'px';
+            _tourSpot.style.left   = (r.left   - pad) + 'px';
+            _tourSpot.style.width  = (r.width  + pad * 2) + 'px';
+            _tourSpot.style.height = (r.height + pad * 2) + 'px';
+
+            var isLast  = idx === _tourSteps.length - 1;
+            var isFirst = idx === 0;
+            _tourTip.innerHTML =
+                '<div class="tour-tip-title">' + step.title + '</div>' +
+                '<div class="tour-tip-text">'  + step.text  + '</div>' +
+                '<div class="tour-tip-footer">' +
+                    '<span class="tour-step-count">' + (idx + 1) + ' / ' + _tourSteps.length + '</span>' +
+                    '<div style="display:flex;gap:6px;">' +
+                        '<button class="tour-btn tour-btn-skip"  onclick="endTour()">✕ Sair</button>' +
+                        (!isFirst ? '<button class="tour-btn tour-btn-prev" onclick="_tourShow(' + (idx - 1) + ')">← Anterior</button>' : '') +
+                        '<button class="tour-btn tour-btn-next" onclick="' + (isLast ? 'endTour()' : '_tourShow(' + (idx + 1) + ')') + '">' +
+                            (isLast ? '✅ Concluir' : 'Próximo →') +
+                        '</button>' +
+                    '</div>' +
+                '</div>';
+
+            _tourTip.style.display = 'block';
+            var tw = 300, pad2 = 14;
+            var th = _tourTip.offsetHeight || 180;
+            var vw = window.innerWidth, vh = window.innerHeight;
+            var t, l;
+            if (step.pos === 'right')  { l = r.right  + pad2;              t = r.top + r.height / 2 - th / 2; }
+            else if (step.pos === 'left') { l = r.left - tw - pad2;        t = r.top + r.height / 2 - th / 2; }
+            else if (step.pos === 'bottom') { l = r.left + r.width/2 - tw/2; t = r.bottom + pad2; }
+            else                        { l = r.left + r.width/2 - tw/2;   t = r.top - th - pad2; }
+            l = Math.max(8, Math.min(l, vw - tw - 8));
+            t = Math.max(8, Math.min(t, vh - th - 8));
+            _tourTip.style.left = l + 'px';
+            _tourTip.style.top  = t + 'px';
+            _tourIdx = idx;
+        }
+
+        function endTour() {
+            if (_tourSpot) _tourSpot.style.display = 'none';
+            if (_tourTip)  _tourTip.style.display  = 'none';
+        }
+
         function toggleTheme() {
             const body = document.body;
             const isDark = body.classList.toggle('dark-theme');

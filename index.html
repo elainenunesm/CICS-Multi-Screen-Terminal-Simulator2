@@ -14,21 +14,33 @@
     <!-- ═══════════════ IDE TITLEBAR ═══════════════ -->
     <div class="ide-titlebar">
         <div class="ide-titlebar-left">
+            <button class="mobile-only ide-mobile-btn" onclick="toggleMobileSidebar()" title="Menu" aria-label="Menu lateral">
+                <span style="font-size:17px;line-height:1;">☰</span>
+            </button>
             <span class="ide-title-icon">🖥️</span>
             <span class="ide-title-text">CICS COBOL Editor - Terminal Simulator</span>
         </div>
         <div class="ide-titlebar-actions">
-            <button class="ide-toolbar-btn" onclick="openFileModal()">
-                <span>📁</span> Carregar
+            <button class="ide-toolbar-btn" onclick="openFileModal()" title="Carregar Telas TXT/BMS">
+                <span class="btn-icon">📁</span><span class="btn-label"> Carregar</span>
             </button>
-            <button class="ide-toolbar-btn" onclick="openExportModal()">
-                <span>📤</span> Exportar
+            <button class="ide-toolbar-btn" onclick="openExportModal()" title="Exportar COBOL / BMS / Copybook">
+                <span class="btn-icon">📤</span><span class="btn-label"> Exportar</span>
             </button>
-            <button class="ide-toolbar-btn ide-toolbar-btn-help" onclick="showHelp()">
-                <span>?</span> Ajuda
+            <button class="ide-toolbar-btn ide-toolbar-btn-tour" onclick="startTour()" title="Tour interativo — conheça cada funcionalidade">
+                <span class="btn-icon">🎯</span><span class="btn-label"> Tour</span>
+            </button>
+            <button class="ide-toolbar-btn ide-toolbar-btn-help" onclick="showHelp()" title="Manual do Simulador">
+                <span class="btn-icon">?</span><span class="btn-label"> Ajuda</span>
+            </button>
+            <button class="mobile-only ide-mobile-btn ide-mobile-btn-code" onclick="toggleMobileCode()" title="Ver Código COBOL/BMS">
+                <span style="font-size:14px;line-height:1;">📑</span>
             </button>
         </div>
     </div>
+
+    <!-- Mobile overlay -->
+    <div id="mobileOverlay" class="mobile-overlay" onclick="closeMobileDrawers()"></div>
 
     <!-- ═══════════════ IDE BODY ═══════════════ -->
     <div class="ide-body">
@@ -568,6 +580,45 @@
                         
                         <div class="help-tip">
                             💡 <strong>Dica:</strong> Você pode arrastar e soltar arquivos diretamente na área de upload!
+                        </div>
+
+                        <p style="margin-top:14px;"><strong>Exemplo de arquivo TXT:</strong>
+                            <span style="font-size:10px;color:var(--ide-text-dim);margin-left:6px;">Copie, salve como <code>.txt</code> e importe no simulador</span>
+                        </p>
+                        <div style="position:relative;">
+                            <button onclick="copyExampleTxt(this)" title="Copiar conteúdo" style="
+                                position:absolute;top:8px;right:8px;
+                                background:#2a2a2d;border:1px solid var(--ide-border);
+                                color:var(--ide-text-dim);font-family:inherit;font-size:10px;
+                                padding:3px 10px;border-radius:4px;cursor:pointer;
+                                transition:all .15s;z-index:1;">
+                                📋 Copiar
+                            </button>
+                            <pre id="exampleTxtContent" class="code-example help-screen-example">================================================================================
+                      *** SISTEMA DE CADASTRO DE CLIENTES ***                   
+                                                                                
+  DATA: xx/xx/xxxx                                    HORA: xx:xx:xx           
+                                                                                
+  OPCAO: [x]                                                                    
+                                                                                
+  1 - INCLUIR NOVO CLIENTE                                                      
+  2 - ALTERAR DADOS DO CLIENTE                                                  
+  3 - CONSULTAR CLIENTE                                                         
+  4 - EXCLUIR CLIENTE                                                           
+  5 - RELATORIOS                                                                
+  0 - SAIR DO SISTEMA                                                           
+                                                                                
+                                                                                
+                                                                                
+                                                                                
+                                                                                
+  MENSAGEM: xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx         
+                                                                                
+================================================================================
+  PF1=AJUDA   PF3=SAIR   PF5=ATUALIZAR</pre>
+                        </div>
+                        <div class="help-tip" style="margin-top:6px;">
+                            📌 <strong>Como usar:</strong> Clique em <strong>Copiar</strong>, cole no Bloco de Notas, salve como <code>CADASTRO.txt</code> e depois clique em <strong>📂 Carregar Telas TXT</strong> no simulador.
                         </div>
                     </div>
                 </div>
