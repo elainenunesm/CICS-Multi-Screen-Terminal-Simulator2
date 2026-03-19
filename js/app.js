@@ -324,6 +324,104 @@
             }
         }
 
+        // ─── MOBILE TERMINAL INPUT ───
+        function _setupMobileInput() {
+            var inp = document.getElementById('mobileTerminalInput');
+            if (!inp) return;
+
+            // Rota input do teclado virtual para o terminal
+            inp.addEventListener('input', function(e) {
+                if (app.currentScreenIndex < 0 || app.fields.length === 0) return;
+                var field = app.fields[app.currentFieldIndex];
+                if (!field || field.label === 'MENSAGEM' || field.row === 0) return;
+
+                var typed = inp.value;
+                inp.value = '';          // limpa buffer imediatamente
+
+                for (var i = 0; i < typed.length; i++) {
+                    var ch = typed[i];
+                    if (field.type === 'numeric' && !/\d/.test(ch)) {
+                        showMessage('Este campo aceita apenas números!', 'error');
+                        animateFieldError(field);
+                        continue;
+                    }
+                    var pos = app.cursorCol - field.col;
+                    if (field.value.length < field.length) {
+                        field.value = field.value.slice(0, pos) + ch + field.value.slice(pos);
+                        if (app.cursorCol < field.col + field.length - 1) app.cursorCol++;
+                    }
+                }
+                updateCursorPosition();
+                renderCurrentScreen();
+            });
+
+            inp.addEventListener('keydown', function(e) {
+                if (e.key === 'Backspace') {
+                    e.preventDefault();
+                    if (app.currentScreenIndex < 0 || app.fields.length === 0) return;
+                    var field = app.fields[app.currentFieldIndex];
+                    if (!field || field.label === 'MENSAGEM' || field.row === 0) return;
+                    var pos = app.cursorCol - field.col;
+                    if (pos > 0) {
+                        field.value = field.value.slice(0, pos - 1) + field.value.slice(pos);
+                        app.cursorCol--;
+                        updateCursorPosition();
+                        renderCurrentScreen();
+                    }
+                } else if (e.key === 'Enter') {
+                    e.preventDefault();
+                    inp.blur();
+                    handleKeyPress(e);
+                } else if (e.key === 'Tab') {
+                    e.preventDefault();
+                    mobileNextField();
+                }
+            });
+
+            // Tap no terminal: detecta campo e foca
+            var terminal = document.getElementById('terminal');
+            if (terminal) {
+                terminal.addEventListener('click', function(e) {
+                    var cell = e.target.closest('[data-row][data-col]');
+                    if (!cell) return;
+                    var row = parseInt(cell.dataset.row);
+                    var col = parseInt(cell.dataset.col);
+                    var fieldIdx = app.fields.findIndex(function(f) {
+                        return f.row === row && col >= f.col && col < f.col + f.length;
+                    });
+                    if (fieldIdx >= 0) {
+                        focusField(fieldIdx);
+                        if (window.innerWidth <= 767) {
+                            var mi = document.getElementById('mobileTerminalInput');
+                            if (mi) { mi.focus(); }
+                        }
+                    }
+                });
+            }
+        }
+
+        function mobileNextField() {
+            if (app.fields.length === 0) return;
+            focusField((app.currentFieldIndex + 1) % app.fields.length);
+            var mi = document.getElementById('mobileTerminalInput');
+            if (mi) mi.focus();
+        }
+        function mobilePrevField() {
+            if (app.fields.length === 0) return;
+            focusField((app.currentFieldIndex - 1 + app.fields.length) % app.fields.length);
+            var mi = document.getElementById('mobileTerminalInput');
+            if (mi) mi.focus();
+        }
+        function mobileClearField() {
+            if (app.fields.length === 0) return;
+            var field = app.fields[app.currentFieldIndex];
+            if (!field || field.label === 'MENSAGEM' || field.row === 0) return;
+            field.value = '';
+            app.cursorCol = field.col;
+            updateCursorPosition();
+            renderCurrentScreen();
+        }
+
         // Configurar Event Listeners
         function setupEventListeners() {
             // Drag and drop
@@ -334,6 +432,9 @@
             
             // Input de arquivo
             document.getElementById('fileInput').addEventListener('change', handleFileSelect);
+
+            // Mobile input (teclado virtual + tap no terminal)
+            _setupMobileInput();
             
             // Teclado
             document.addEventListener('keydown', handleKeyPress);
@@ -1222,6 +1323,18 @@
             updateCursorPosition();
             highlightCurrentField();
             updateFieldInfo(field);
+
+            // Atualizar barra mobile e configurar teclado virtual
+            var lbl = document.getElementById('mobileFieldLabel');
+            if (lbl) {
+                var fname = field.bmsName || field.label || ('Campo ' + (index + 1));
+                lbl.textContent = fname + (field.type === 'numeric' ? ' [núm]' : '');
+            }
+            var mi = document.getElementById('mobileTerminalInput');
+            if (mi) {
+                mi.inputMode = field.type === 'numeric' ? 'numeric' : 'text';
+                mi.setAttribute('autocapitalize', field.type === 'numeric' ? 'off' : 'characters');
+            }
         }
 
         function highlightCurrentField() {
@@ -2552,66 +2665,118 @@
         // ════════════════════════════════════════════
         var _tourSpot = null, _tourTip = null, _tourIdx = 0;
 
+        /* ── helpers para abrir drawers sem o overlay escuro do mobile ── */
+        function _tourOpenSidebar() {
+            var sb = document.querySelector('.ide-sidebar');
+            var cp = document.querySelector('.ide-code-panel');
+            if (sb) sb.classList.add('mobile-open');
+            if (cp) cp.classList.remove('mobile-open');
+            /* NÃO mostra mobileOverlay: o tour já tem seu próprio overlay escuro */
+        }
+        function _tourOpenCode() {
+            var sb = document.querySelector('.ide-sidebar');
+            var cp = document.querySelector('.ide-code-panel');
+            if (sb) sb.classList.remove('mobile-open');
+            if (cp) cp.classList.add('mobile-open');
+        }
+        function _tourCloseDrawers() {
+            var sb = document.querySelector('.ide-sidebar');
+            var cp = document.querySelector('.ide-code-panel');
+            var ov = document.getElementById('mobileOverlay');
+            if (sb) sb.classList.remove('mobile-open');
+            if (cp) cp.classList.remove('mobile-open');
+            if (ov) ov.classList.remove('show');
+        }
+
         var _tourSteps = [
             {
                 sel: '.ide-titlebar-actions',
                 pos: 'bottom',
+                setup: function() { _tourCloseDrawers(); },
                 title: '🛠 Barra de Ferramentas',
                 text: 'Aqui ficam os botões principais: <b>Carregar</b> importa telas TXT/BMS; <b>Exportar</b> gera COBOL, BMS, Copybook ou JSON; <b>Tour</b> reinicia este guia; <b>Ajuda</b> abre o manual completo.'
             },
             {
                 sel: '.sidebar-tabs',
                 pos: 'right',
+                setup: function() {
+                    switchSidebarTab('telas');
+                    if (window.innerWidth <= 767) _tourOpenSidebar();
+                },
                 title: '🗂 Abas do Painel Lateral',
                 text: 'Quatro abas organizam o simulador: <b>🖥 Telas</b> (gerenciar telas carregadas), <b>🔀 Nav.</b> (regras de navegação por PF key), <b>🔤 Campos</b> (atributos BMS e validações) e <b>⚙ Config</b> (tema e exportações rápidas).'
             },
             {
                 sel: '.sidebar-file-row',
                 pos: 'right',
+                setup: function() {
+                    switchSidebarTab('telas');
+                    if (window.innerWidth <= 767) _tourOpenSidebar();
+                },
                 title: '📂 Carregar Telas',
                 text: 'Clique em <b>Carregar</b> para importar arquivos <b>.txt</b> (layout 3270 com <code>x</code> para numérico e <code>z</code> para alfanumérico) ou <b>.bms</b>. Você pode carregar várias telas de uma vez.'
             },
             {
                 sel: '.screens-container',
                 pos: 'right',
+                setup: function() {
+                    switchSidebarTab('telas');
+                    if (window.innerWidth <= 767) _tourOpenSidebar();
+                },
                 title: '📋 Lista de Telas',
                 text: 'Cada tela carregada aparece aqui. Clique para visualizar, use os botões para renomear (✏) ou excluir (🗑). A tela ativa fica destacada em azul.'
             },
             {
                 sel: '.terminal-screen',
                 pos: 'top',
+                setup: function() { if (window.innerWidth <= 767) _tourCloseDrawers(); },
                 title: '🖥 Terminal IBM 3270',
                 text: 'Emulação exata do terminal 3270 — <b>24 linhas × 80 colunas</b>. Campos editáveis aparecem em <b>verde claro</b>. Clique num campo para selecioná-lo e configurar seus atributos na aba Campos.'
             },
             {
                 sel: '.function-keys',
                 pos: 'top',
+                setup: function() { if (window.innerWidth <= 767) _tourCloseDrawers(); },
                 title: '⌨️ Teclas de Função',
                 text: 'As teclas PF são detectadas automaticamente do arquivo TXT. Teclas com <b>borda verde</b> têm regras de navegação configuradas. Clique em qualquer tecla para simulá-la.'
             },
             {
-                sel: '#navMapping',
-                fallback: '[data-tab="nav"]',
-                pos: 'right',
+                /* destaca o botão de aba Nav — elemento pequeno e sempre visível */
+                sel: '[data-tab="nav"]',
+                pos: 'bottom',
+                setup: function() {
+                    switchSidebarTab('nav');
+                    if (window.innerWidth <= 767) _tourOpenSidebar();
+                },
                 title: '🔀 Regras de Navegação',
-                text: 'Define <b>o que acontece</b> ao pressionar cada PF key: navegar para outra tela, exibir mensagem, limpar campos, etc. Clique em <b>+ Adicionar Regra</b> para criar. O código COBOL é gerado automaticamente a partir dessas regras.'
+                text: 'Ative a aba <b>🔀 Nav.</b> para definir o que acontece ao pressionar cada PF key: navegar para outra tela, exibir mensagem, limpar campos, etc. Clique em <b>+ Adicionar Regra</b> para criar. O código COBOL é gerado automaticamente.'
             },
             {
-                sel: '#validationConfig',
-                fallback: '[data-tab="campos"]',
-                pos: 'right',
+                /* destaca o botão de aba Campos — elemento pequeno e sempre visível */
+                sel: '[data-tab="campos"]',
+                pos: 'bottom',
+                setup: function() {
+                    switchSidebarTab('campos');
+                    if (window.innerWidth <= 767) _tourOpenSidebar();
+                },
                 title: '🔤 Atributos BMS e Validações',
-                text: 'Com um campo selecionado: configure o <b>nome BMS</b> (ex: NOMEI), a <b>proteção</b> (UNPROT/PROT/ASKIP), a <b>intensidade</b> (BRT/DRK) e regras de validação como tamanho mínimo, CPF, data, etc.'
+                text: 'Ative a aba <b>🔤 Campos</b> e clique em um campo no terminal para configurar: <b>nome BMS</b> (ex: NOMEI), <b>proteção</b> (UNPROT/PROT/ASKIP), <b>intensidade</b> (BRT/DRK) e validações como tamanho mínimo, CPF, data, etc.'
             },
             {
                 sel: '#tabCics',
                 pos: 'left',
+                setup: function() {
+                    if (window.innerWidth <= 767) _tourOpenCode();
+                },
                 title: '📑 Abas de Código',
                 text: 'Alterne entre <b>CICS/COBOL</b> (código completo do programa com navegação e validações) e <b>BMS MAP</b> (definição do layout da tela com DFHMSD/DFHMDI/DFHMDF). Ambos são gerados em tempo real.'
             },
             {
                 sel: '.ide-code-panel',
                 pos: 'left',
+                setup: function() {
+                    if (window.innerWidth <= 767) _tourOpenCode();
+                },
                 title: '📄 Painel de Código Gerado',
                 text: 'Exibe o código gerado automaticamente. Você pode <b>redimensionar</b> este painel arrastando a borda esquerda. Use o botão <b>▶ PROC</b> para pular direto para a PROCEDURE DIVISION.'
             }
@@ -2640,19 +2805,50 @@
             return el;
         }
 
+        /* _tourShow: executa setup e aguarda reflow antes de posicionar */
         function _tourShow(idx) {
             var step = _tourSteps[idx];
-            var el   = _tourGetEl(step);
+            if (!step) { endTour(); return; }
+            if (step.setup) {
+                step.setup();
+                /* aguarda repintura do DOM (tab switch + drawer animation) */
+                setTimeout(function() { _tourPosition(idx); }, 60);
+            } else {
+                _tourPosition(idx);
+            }
+        }
+
+        /* _tourPosition: mede o elemento e posiciona spotlight + tooltip */
+        function _tourPosition(idx) {
+            var step     = _tourSteps[idx];
+            var el       = _tourGetEl(step);
+            var isMobile = window.innerWidth <= 767;
+
             if (!el) {
                 if (idx < _tourSteps.length - 1) { _tourShow(idx + 1); return; }
                 else { endTour(); return; }
             }
-            var pad  = 7;
-            var r    = el.getBoundingClientRect();
-            _tourSpot.style.top    = (r.top    - pad) + 'px';
-            _tourSpot.style.left   = (r.left   - pad) + 'px';
-            _tourSpot.style.width  = (r.width  + pad * 2) + 'px';
-            _tourSpot.style.height = (r.height + pad * 2) + 'px';
+
+            var pad = 7;
+            var r   = el.getBoundingClientRect();
+
+            /* visível na viewport? */
+            var visible = r.width > 0 && r.height > 0 &&
+                          r.right  > 0 && r.left < window.innerWidth &&
+                          r.bottom > 0 && r.top  < window.innerHeight;
+
+            if (visible) {
+                _tourSpot.style.top    = (r.top    - pad) + 'px';
+                _tourSpot.style.left   = (r.left   - pad) + 'px';
+                _tourSpot.style.width  = (r.width  + pad * 2) + 'px';
+                _tourSpot.style.height = (r.height + pad * 2) + 'px';
+            } else {
+                /* elemento fora da viewport (drawer fechado, etc.) — esconde spotlight */
+                _tourSpot.style.top    = '-9999px';
+                _tourSpot.style.left   = '-9999px';
+                _tourSpot.style.width  = '0';
+                _tourSpot.style.height = '0';
+            }
 
             var isLast  = idx === _tourSteps.length - 1;
             var isFirst = idx === 0;
@@ -2660,35 +2856,50 @@
                 '<div class="tour-tip-title">' + step.title + '</div>' +
                 '<div class="tour-tip-text">'  + step.text  + '</div>' +
                 '<div class="tour-tip-footer">' +
-                    '<span class="tour-step-count">' + (idx + 1) + ' / ' + _tourSteps.length + '</span>' +
-                    '<div style="display:flex;gap:6px;">' +
-                        '<button class="tour-btn tour-btn-skip"  onclick="endTour()">✕ Sair</button>' +
-                        (!isFirst ? '<button class="tour-btn tour-btn-prev" onclick="_tourShow(' + (idx - 1) + ')">← Anterior</button>' : '') +
+                    '<span class="tour-step-count">' + (idx + 1) + ' / ' + _tourSteps.length + '</span>' +
+                    '<div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end;">' +
+                        '<button class="tour-btn tour-btn-skip"  onclick="endTour()">\u2715 Sair</button>' +
+                        (!isFirst ? '<button class="tour-btn tour-btn-prev" onclick="_tourShow(' + (idx - 1) + ')">\u2190 Anterior</button>' : '') +
                         '<button class="tour-btn tour-btn-next" onclick="' + (isLast ? 'endTour()' : '_tourShow(' + (idx + 1) + ')') + '">' +
-                            (isLast ? '✅ Concluir' : 'Próximo →') +
+                            (isLast ? '\u2705 Concluir' : 'Pr\u00f3ximo \u2192') +
                         '</button>' +
                     '</div>' +
                 '</div>';
 
             _tourTip.style.display = 'block';
-            var tw = 300, pad2 = 14;
-            var th = _tourTip.offsetHeight || 180;
             var vw = window.innerWidth, vh = window.innerHeight;
-            var t, l;
-            if (step.pos === 'right')  { l = r.right  + pad2;              t = r.top + r.height / 2 - th / 2; }
-            else if (step.pos === 'left') { l = r.left - tw - pad2;        t = r.top + r.height / 2 - th / 2; }
-            else if (step.pos === 'bottom') { l = r.left + r.width/2 - tw/2; t = r.bottom + pad2; }
-            else                        { l = r.left + r.width/2 - tw/2;   t = r.top - th - pad2; }
-            l = Math.max(8, Math.min(l, vw - tw - 8));
-            t = Math.max(8, Math.min(t, vh - th - 8));
-            _tourTip.style.left = l + 'px';
-            _tourTip.style.top  = t + 'px';
+
+            if (isMobile) {
+                /* celular: painel fixo na parte inferior */
+                _tourTip.style.width    = (vw - 16) + 'px';
+                _tourTip.style.left     = '8px';
+                _tourTip.style.top      = '';
+                _tourTip.style.bottom   = '10px';
+                _tourTip.style.position = 'fixed';
+            } else {
+                /* desktop: posicionamento inteligente ao redor do elemento */
+                _tourTip.style.bottom   = '';
+                _tourTip.style.position = '';
+                var tw = 300, pad2 = 14;
+                var th = _tourTip.offsetHeight || 180;
+                var t, l;
+                if (step.pos === 'right')       { l = r.right  + pad2;                t = r.top + r.height / 2 - th / 2; }
+                else if (step.pos === 'left')   { l = r.left   - tw - pad2;            t = r.top + r.height / 2 - th / 2; }
+                else if (step.pos === 'bottom') { l = r.left   + r.width / 2 - tw / 2; t = r.bottom + pad2; }
+                else                            { l = r.left   + r.width / 2 - tw / 2; t = r.top - th - pad2; }
+                l = Math.max(8, Math.min(l, vw - tw - 8));
+                t = Math.max(8, Math.min(t, vh - th - 8));
+                _tourTip.style.left = l + 'px';
+                _tourTip.style.top  = t + 'px';
+            }
             _tourIdx = idx;
         }
 
         function endTour() {
             if (_tourSpot) _tourSpot.style.display = 'none';
             if (_tourTip)  _tourTip.style.display  = 'none';
+            /* fechar drawers mobile que o tour possa ter aberto */
+            _tourCloseDrawers();
         }
 
         function toggleTheme() {

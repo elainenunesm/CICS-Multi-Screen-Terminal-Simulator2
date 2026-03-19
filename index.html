@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>CICS COBOL Editor - Terminal Simulator</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -219,6 +219,22 @@
                             <span id="time"></span>
                         </div>
                     </div>
+                </div>
+            </div>
+
+            <!-- input oculto só para capturar teclado virtual no mobile -->
+            <input id="mobileTerminalInput"
+                   type="text"
+                   autocomplete="off" autocorrect="off" autocapitalize="characters" spellcheck="false"
+                   style="position:fixed;top:-200px;left:-200px;width:1px;height:1px;opacity:0;pointer-events:none;">
+
+            <!-- barra de controles mobile: Tab / Limpar -->
+            <div class="mobile-field-bar mobile-only">
+                <span class="mobile-field-label" id="mobileFieldLabel">Toque num campo</span>
+                <div style="display:flex;gap:5px;margin-left:auto;">
+                    <button class="mobile-field-btn" onclick="mobilePrevField()" title="Campo anterior">⇤ Ant</button>
+                    <button class="mobile-field-btn" onclick="mobileNextField()" title="Próximo campo">Tab ⇥</button>
+                    <button class="mobile-field-btn" onclick="mobileClearField()" title="Limpar campo">⌫ Limpar</button>
                 </div>
             </div>
 
